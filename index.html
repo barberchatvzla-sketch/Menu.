@@ -20,16 +20,16 @@
             overflow: hidden; 
         }
 
-        /* --- CONTENEDOR CON SCROLL SNAP (LA MAGIA) --- */
+        /* --- CONTENEDOR CON SCROLL SNAP --- */
         #menu-container {
             height: 100vh;
             width: 100vw;
             overflow-y: scroll;
-            scroll-snap-type: y mandatory; /* Obliga a detenerse en cada foto */
+            scroll-snap-type: y mandatory;
             scroll-behavior: smooth;
-            /* Ocultar barra de scroll para mayor elegancia */
             scrollbar-width: none; 
             -ms-overflow-style: none;
+            background-color: #000; /* Fondo negro para los bordes si la imagen no llena todo */
         }
         #menu-container::-webkit-scrollbar { display: none; }
 
@@ -37,20 +37,32 @@
         .menu-item {
             height: 100vh;
             width: 100vw;
-            scroll-snap-align: start; /* Punto de enganche */
+            scroll-snap-align: start;
             position: relative;
             display: flex;
-            justify-content: center;
-            align-items: center;
+            justify-content: center; /* Centrado horizontal */
+            align-items: center;     /* Centrado vertical */
             overflow: hidden;
+            background-color: #000; /* Asegura fondo negro detrás de la foto */
         }
 
-        /* La imagen de fondo */
+        /* --- CAMBIOS REALIZADOS AQUÍ --- */
         .menu-bg {
-            width: 100%;
-            height: 100%;
-            object-fit: cover; /* Asegura que la foto cubra todo sin deformarse */
-            object-position: center;
+            /* Usamos max-width y max-height para que la imagen
+               nunca sea más grande que la pantalla, pero mantenga su
+               tamaño si es más pequeña.
+            */
+            max-width: 100%;
+            max-height: 100%;
+            
+            /* object-fit: contain es la CLAVE. 
+               Hace que la imagen se ajuste dentro del espacio disponible
+               SIN recortarse.
+            */
+            object-fit: contain; 
+            
+            display: block;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5); /* Sombra suave para darle profundidad */
         }
 
         /* Flecha indicadora animada */
@@ -62,6 +74,10 @@
             z-index: 10;
             animation: bounce 2s infinite;
             filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.8));
+            /* Fondo semitransparente opcional para que la flecha se vea si la foto es clara */
+            background: rgba(0,0,0,0.3);
+            border-radius: 50%;
+            padding: 5px;
         }
 
         /* Loader */
@@ -96,7 +112,6 @@
     const container = document.getElementById('menu-container');
 
     async function cargarMenu() {
-        // Obtenemos las imágenes ordenadas por la más reciente
         const { data, error } = await clienteSupabase
             .from('imagenes_publicas')
             .select('*')
@@ -119,7 +134,6 @@
             const div = document.createElement('div');
             div.className = 'menu-item';
             
-            // Solo mostramos la flecha si NO es la última imagen
             const arrowHtml = index < data.length - 1 
                 ? `<div class="scroll-hint"><i data-lucide="chevron-down" color="white" size="40"></i></div>` 
                 : `<div class="scroll-hint"><span style="font-size:12px; opacity:0.7;">Fin del menú</span></div>`;
