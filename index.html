@@ -29,7 +29,7 @@
             scroll-behavior: smooth;
             scrollbar-width: none; 
             -ms-overflow-style: none;
-            background-color: #000; /* Fondo negro para los bordes si la imagen no llena todo */
+            background-color: #000;
         }
         #menu-container::-webkit-scrollbar { display: none; }
 
@@ -40,29 +40,19 @@
             scroll-snap-align: start;
             position: relative;
             display: flex;
-            justify-content: center; /* Centrado horizontal */
-            align-items: center;     /* Centrado vertical */
+            justify-content: center;
+            align-items: center;
             overflow: hidden;
-            background-color: #000; /* Asegura fondo negro detrás de la foto */
+            background-color: #000;
         }
 
-        /* --- CAMBIOS REALIZADOS AQUÍ --- */
+        /* --- IMAGEN CENTRADA Y SIN RECORTES --- */
         .menu-bg {
-            /* Usamos max-width y max-height para que la imagen
-               nunca sea más grande que la pantalla, pero mantenga su
-               tamaño si es más pequeña.
-            */
             max-width: 100%;
             max-height: 100%;
-            
-            /* object-fit: contain es la CLAVE. 
-               Hace que la imagen se ajuste dentro del espacio disponible
-               SIN recortarse.
-            */
-            object-fit: contain; 
-            
+            object-fit: contain; /* Muestra la imagen completa */
             display: block;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5); /* Sombra suave para darle profundidad */
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
 
         /* Flecha indicadora animada */
@@ -74,7 +64,6 @@
             z-index: 10;
             animation: bounce 2s infinite;
             filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.8));
-            /* Fondo semitransparente opcional para que la flecha se vea si la foto es clara */
             background: rgba(0,0,0,0.3);
             border-radius: 50%;
             padding: 5px;
@@ -112,10 +101,11 @@
     const container = document.getElementById('menu-container');
 
     async function cargarMenu() {
+        // --- CAMBIO AQUÍ: ascending: true (Orden de subida: Antiguas primero) ---
         const { data, error } = await clienteSupabase
             .from('imagenes_publicas')
             .select('*')
-            .order('id', { ascending: false });
+            .order('id', { ascending: true }); 
 
         if (error) {
             console.error(error);
@@ -134,12 +124,13 @@
             const div = document.createElement('div');
             div.className = 'menu-item';
             
+            // Flecha solo si NO es la última imagen
             const arrowHtml = index < data.length - 1 
                 ? `<div class="scroll-hint"><i data-lucide="chevron-down" color="white" size="40"></i></div>` 
                 : `<div class="scroll-hint"><span style="font-size:12px; opacity:0.7;">Fin del menú</span></div>`;
 
             div.innerHTML = `
-                <img src="${img.url_publica}" class="menu-bg" loading="lazy" alt="Plato">
+                <img src="${img.url_publica}" class="menu-bg" loading="lazy" alt="Menú página ${index + 1}">
                 ${arrowHtml}
             `;
             container.appendChild(div);
