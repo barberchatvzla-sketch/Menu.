@@ -101,11 +101,13 @@
     const container = document.getElementById('menu-container');
 
     async function cargarMenu() {
-        // --- CAMBIO AQUÍ: ascending: true (Orden de subida: Antiguas primero) ---
+        // --- CAMBIO IMPORTANTE AQUÍ ---
+        // Ordenamos por 'nombre_archivo' para respetar la secuencia alfabética (001, 002, 003...)
+        // que genera el panel de administración.
         const { data, error } = await clienteSupabase
             .from('imagenes_publicas')
             .select('*')
-            .order('id', { ascending: true }); 
+            .order('nombre_archivo', { ascending: true }); 
 
         if (error) {
             console.error(error);
