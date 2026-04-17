@@ -1,147 +1,445 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nuestro Menú</title>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Raleway:wght@300;400&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Galería · Menú Visual</title>
+  <style>
+    /* RESET Y TEMA OSCURO */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body { 
-            background-color: #000; 
-            font-family: 'Raleway', sans-serif; 
-            color: white; 
-            overflow: hidden; 
-        }
+    body {
+      background-color: #0b0b0b;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif;
+      overflow: hidden;           /* El scroll lo maneja el contenedor */
+      color: #e0e0e0;
+    }
 
-        /* --- CONTENEDOR CON SCROLL SNAP --- */
-        #menu-container {
-            height: 100vh;
-            width: 100vw;
-            overflow-y: scroll;
-            scroll-snap-type: y mandatory;
-            scroll-behavior: smooth;
-            scrollbar-width: none; 
-            -ms-overflow-style: none;
-            background-color: #000;
-        }
-        #menu-container::-webkit-scrollbar { display: none; }
+    /* INDICADOR DE CARGA ELEGANTE */
+    .loader-overlay {
+      position: fixed;
+      inset: 0;
+      background: #080808;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      transition: opacity 0.8s cubic-bezier(0.23, 1, 0.32, 1), visibility 0.8s;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
 
-        /* --- CADA PLATO (SECCIÓN) --- */
-        .menu-item {
-            height: 100vh;
-            width: 100vw;
-            scroll-snap-align: start;
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-            background-color: #000;
-        }
+    .loader-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.8rem;
+    }
 
-        /* --- IMAGEN CENTRADA Y SIN RECORTES --- */
-        .menu-bg {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain; /* Muestra la imagen completa */
-            display: block;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-        }
+    /* Spinner minimalista y elegante */
+    .elegant-spinner {
+      width: 48px;
+      height: 48px;
+      border: 2px solid rgba(255, 255, 255, 0.08);
+      border-top: 2px solid #ffffff;
+      border-right: 2px solid #aaaaaa;
+      border-radius: 50%;
+      animation: spin 1.1s cubic-bezier(0.5, 0.1, 0.4, 0.9) infinite;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+    }
 
-        /* Flecha indicadora animada */
-        .scroll-hint {
-            position: absolute;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10;
-            animation: bounce 2s infinite;
-            filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.8));
-            background: rgba(0,0,0,0.3);
-            border-radius: 50%;
-            padding: 5px;
-        }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
 
-        /* Loader */
-        .loader {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 100vh; background: #121212;
-        }
+    .loader-text {
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      font-weight: 300;
+      font-size: 0.9rem;
+      color: #aaa;
+      opacity: 0.7;
+      animation: pulse 2.2s infinite;
+    }
 
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {transform: translateX(-50%) translateY(0);}
-            40% {transform: translateX(-50%) translateY(-10px);}
-            60% {transform: translateX(-50%) translateY(-5px);}
-        }
-    </style>
+    @keyframes pulse {
+      0% { opacity: 0.4; }
+      50% { opacity: 0.9; }
+      100% { opacity: 0.4; }
+    }
+
+    .loader-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    /* CONTENEDOR PRINCIPAL CON SCROLL SNAP (MAGNÉTICO) */
+    .snap-container {
+      height: 100vh;
+      width: 100%;
+      overflow-y: scroll;
+      scroll-snap-type: y mandatory;
+      scroll-behavior: smooth;      /* suaviza el scroll entre snaps */
+      background: #050505;
+      -webkit-overflow-scrolling: touch; /* suavidad en iOS */
+    }
+
+    /* Cada sección ocupa el viewport completo y fuerza el snap */
+    .snap-section {
+      scroll-snap-align: start;
+      scroll-snap-stop: always;      /* evita saltar secciones (efecto magnético) */
+      height: 100vh;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #0c0c0c;
+      position: relative;
+      /* transición sutil para cambios de imagen */
+      transition: background 0.2s;
+    }
+
+    /* Contenedor de imagen: ajuste perfecto sin deformar */
+    .image-wrapper {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .menu-image {
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      object-fit: contain;           /* muestra la imagen completa (menú legible) */
+      display: block;
+      border-radius: 0px;            /* puede cambiarse si se desea */
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.02);
+      transition: transform 0.3s ease, filter 0.3s;
+      filter: brightness(0.98) contrast(1.02);
+      user-select: none;
+      pointer-events: none;          /* no interfiere con scroll, pero si se necesita menú funcional se puede quitar */
+    }
+
+    /* Pequeño detalle: un sutil gradiente en los bordes para que se integre */
+    .snap-section::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 40px;
+      background: linear-gradient(to top, #00000020, transparent);
+      pointer-events: none;
+    }
+
+    /* Opcional: indicador sutil de progreso (puntos) */
+    .progress-dots {
+      position: fixed;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 50;
+      opacity: 0.5;
+      transition: opacity 0.2s;
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 10px;
+      background: #888;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .dot.active {
+      background: #f0f0f0;
+      height: 24px;
+      box-shadow: 0 0 12px #ffffff40;
+    }
+
+    /* Scrollbar estilizada (opcional, oscura) */
+    .snap-container::-webkit-scrollbar {
+      width: 6px;
+    }
+    .snap-container::-webkit-scrollbar-track {
+      background: #0a0a0a;
+    }
+    .snap-container::-webkit-scrollbar-thumb {
+      background: #2a2a2a;
+      border-radius: 10px;
+    }
+
+    /* Ajustes para dispositivos muy pequeños */
+    @media (max-width: 600px) {
+      .progress-dots {
+        display: none;  /* en móvil puede molestar, lo ocultamos */
+      }
+      .image-wrapper {
+        padding: 8px;
+      }
+    }
+
+    /* Suavizado de carga de imágenes (están en imgur, cargan bien) */
+    .menu-image {
+      opacity: 0;
+      animation: fadeInImage 0.5s forwards;
+    }
+
+    @keyframes fadeInImage {
+      to { opacity: 1; }
+    }
+  </style>
 </head>
 <body>
 
-    <div id="menu-container">
-        <div class="loader" id="loader">
-            <h2 style="font-family: 'Playfair Display'; color: #3ecf8e;">Cargando Menú...</h2>
-        </div>
+  <!-- INDICADOR DE CARGA ELEGANTE -->
+  <div class="loader-overlay" id="loader">
+    <div class="loader-content">
+      <div class="elegant-spinner"></div>
+      <div class="loader-text">Cargando menú</div>
     </div>
+  </div>
 
-<script>
-    lucide.createIcons();
-    
-    // CONEXIÓN SUPABASE
-    const SUPABASE_URL = 'https://uqbisplipwdkiyvxvurn.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxYmlzcGxpcHdka2l5dnh2dXJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3MjE1NDYsImV4cCI6MjA4NTI5NzU0Nn0.UZl6unPW3ZWuVe33s5iJyJxrQpyLTp8iQ6k52Ux2_CU'; 
-    const clienteSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  <!-- INDICADOR DE PUNTOS (OPCIONAL, PERO ELEGANTE) -->
+  <div class="progress-dots" id="progressDots"></div>
 
-    const container = document.getElementById('menu-container');
+  <!-- CONTENEDOR PRINCIPAL CON SCROLL MAGNÉTICO -->
+  <div class="snap-container" id="snapContainer">
+    <!-- Las secciones se generan dinámicamente con JS para mantener orden y limpieza -->
+  </div>
 
-    async function cargarMenu() {
-        // --- CAMBIO IMPORTANTE AQUÍ ---
-        // Ordenamos por 'nombre_archivo' para respetar la secuencia alfabética (001, 002, 003...)
-        // que genera el panel de administración.
-        const { data, error } = await clienteSupabase
-            .from('imagenes_publicas')
-            .select('*')
-            .order('nombre_archivo', { ascending: true }); 
+  <script>
+    (function() {
+      "use strict";
 
-        if (error) {
-            console.error(error);
-            return;
-        }
+      // ----- CONFIGURACIÓN: URLs EN ORDEN EXACTO -----
+      const IMAGE_URLS = [
+        "https://i.imgur.com/z1e2MuH.png",   // 1
+        "https://i.imgur.com/d0ACLMG.png",   // 2
+        "https://i.imgur.com/eJ6KxnE.png",   // 3
+        "https://i.imgur.com/xOEDvuo.png",   // 4
+        "https://i.imgur.com/L81aFSh.png",   // 5
+        "https://i.imgur.com/XyBUP6B.png",   // 6
+        "https://i.imgur.com/0XSf3g0.png"    // 7 (misma que 6, según indicado)
+      ];
 
-        const loader = document.getElementById('loader');
-        if(loader) loader.remove();
+      // Elementos del DOM
+      const loader = document.getElementById('loader');
+      const container = document.getElementById('snapContainer');
+      const dotsContainer = document.getElementById('progressDots');
 
-        if (data.length === 0) {
-            container.innerHTML = `<div class="menu-item"><h3>Pronto publicaremos nuestro menú.</h3></div>`;
-            return;
-        }
+      // ----- CONSTRUIR SECCIONES DINÁMICAMENTE -----
+      function buildSections() {
+        container.innerHTML = ''; 
+        IMAGE_URLS.forEach((url, index) => {
+          const section = document.createElement('section');
+          section.className = 'snap-section';
+          section.dataset.index = index;
 
-        data.forEach((img, index) => {
-            const div = document.createElement('div');
-            div.className = 'menu-item';
-            
-            // Flecha solo si NO es la última imagen
-            const arrowHtml = index < data.length - 1 
-                ? `<div class="scroll-hint"><i data-lucide="chevron-down" color="white" size="40"></i></div>` 
-                : `<div class="scroll-hint"><span style="font-size:12px; opacity:0.7;">Fin del menú</span></div>`;
+          const wrapper = document.createElement('div');
+          wrapper.className = 'image-wrapper';
 
-            div.innerHTML = `
-                <img src="${img.url_publica}" class="menu-bg" loading="lazy" alt="Menú página ${index + 1}">
-                ${arrowHtml}
-            `;
-            container.appendChild(div);
+          const img = document.createElement('img');
+          img.src = url;
+          img.alt = `Menú sección ${index + 1}`;
+          img.className = 'menu-image';
+          // Precarga suave: ya se muestra con fade
+          
+          wrapper.appendChild(img);
+          section.appendChild(wrapper);
+          container.appendChild(section);
         });
-        
-        lucide.createIcons();
-    }
 
-    cargarMenu();
-</script>
+        // Crear dots de progreso
+        createProgressDots();
+      }
+
+      // ----- CREAR PUNTOS DE NAVEGACIÓN (INDICADOR LATERAL) -----
+      function createProgressDots() {
+        dotsContainer.innerHTML = '';
+        IMAGE_URLS.forEach((_, idx) => {
+          const dot = document.createElement('div');
+          dot.className = 'dot';
+          dot.dataset.index = idx;
+          dotsContainer.appendChild(dot);
+        });
+      }
+
+      // ----- ACTUALIZAR DOT ACTIVO SEGÚN SECCIÓN VISIBLE -----
+      function updateActiveDot() {
+        const sections = document.querySelectorAll('.snap-section');
+        const dots = document.querySelectorAll('.dot');
+        if (!sections.length) return;
+
+        const containerRect = container.getBoundingClientRect();
+        const containerTop = containerRect.top;
+
+        let activeIndex = 0;
+        let minDistance = Infinity;
+
+        sections.forEach((section, index) => {
+          const rect = section.getBoundingClientRect();
+          // distancia desde el borde superior del viewport al inicio de la sección
+          const distance = Math.abs(rect.top - containerTop);
+          if (distance < minDistance) {
+            minDistance = distance;
+            activeIndex = index;
+          }
+        });
+
+        // Aplicar clase active
+        dots.forEach((dot, i) => {
+          if (i === activeIndex) {
+            dot.classList.add('active');
+          } else {
+            dot.classList.remove('active');
+          }
+        });
+      }
+
+      // ----- GESTIÓN DE CARGA: OCULTAR LOADER CUANDO TODO ESTÉ LISTO -----
+      function hideLoader() {
+        // Aseguramos que las imágenes principales estén al menos intentando cargarse
+        // Pero usamos window.load + un pequeño timeout para dar sensación de fluidez
+        loader.classList.add('hidden');
+      }
+
+      // Precargar imágenes para que el loader se oculte después de que estén listas
+      function preloadImagesAndHideLoader() {
+        const images = document.querySelectorAll('.menu-image');
+        let loadedCount = 0;
+        const totalImages = images.length;
+
+        if (totalImages === 0) {
+          // si no hay imágenes, ocultar igual
+          setTimeout(hideLoader, 400);
+          return;
+        }
+
+        function imageLoadedOrError() {
+          loadedCount++;
+          if (loadedCount >= totalImages) {
+            // Todas las imágenes terminaron (éxito o fallo), ocultamos loader
+            setTimeout(() => {
+              hideLoader();
+            }, 300); // pequeña pausa para que se vea elegante
+          }
+        }
+
+        images.forEach(img => {
+          if (img.complete) {
+            // ya estaba cargada (cache)
+            imageLoadedOrError();
+          } else {
+            img.addEventListener('load', imageLoadedOrError);
+            img.addEventListener('error', imageLoadedOrError); // aunque falle, seguimos
+          }
+        });
+
+        // Fallback: si por alguna razón no se disparan eventos, ocultar tras 2.5s
+        setTimeout(() => {
+          hideLoader();
+        }, 2500);
+      }
+
+      // ----- SCROLL SNAP OBSERVER PARA ACTUALIZAR DOTS -----
+      function initSnapObserver() {
+        // Usamos scroll event + requestAnimationFrame, pero también Intersection Observer es más eficiente.
+        // Implementamos Intersection Observer para actualizar el dot activo con precisión.
+        const sections = document.querySelectorAll('.snap-section');
+        if (!sections.length) return;
+
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const index = entry.target.dataset.index;
+              if (index !== undefined) {
+                const dots = document.querySelectorAll('.dot');
+                dots.forEach((dot, i) => {
+                  if (i === parseInt(index)) {
+                    dot.classList.add('active');
+                  } else {
+                    dot.classList.remove('active');
+                  }
+                });
+              }
+            }
+          });
+        }, {
+          threshold: 0.5,        // se activa cuando al menos el 50% de la sección es visible
+          root: container,       // el contenedor con scroll
+        });
+
+        sections.forEach(section => observer.observe(section));
+
+        // También escuchamos scroll para actualizar en tiempo real (respaldo)
+        container.addEventListener('scroll', () => {
+          requestAnimationFrame(updateActiveDot);
+        });
+
+        // Actualizar al inicio
+        setTimeout(updateActiveDot, 100);
+      }
+
+      // ----- EFECTO ADICIONAL: "MAGNÉTICO" REFORZADO CON SCROLL-SNAP-STOP -----
+      // Ya está incluido en CSS: scroll-snap-stop: always;
+      // Pero en navegadores que no lo soporten completamente, no pasa nada.
+      
+      // ----- INICIALIZACIÓN GENERAL -----
+      function init() {
+        buildSections();                // Construye las secciones con imágenes
+
+        // Iniciar precarga y ocultar loader
+        preloadImagesAndHideLoader();
+
+        // Configurar observador de snap para dots
+        initSnapObserver();
+
+        // Ajuste adicional: si el usuario hace clic en un dot, puede desplazarse a esa sección (UX)
+        dotsContainer.addEventListener('click', (e) => {
+          const dot = e.target.closest('.dot');
+          if (!dot) return;
+          const index = dot.dataset.index;
+          if (index !== undefined) {
+            const sections = document.querySelectorAll('.snap-section');
+            if (sections[index]) {
+              sections[index].scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }
+        });
+
+        // También ocultamos el loader después de un tiempo máximo (por si algo falla)
+        setTimeout(() => {
+          if (!loader.classList.contains('hidden')) {
+            hideLoader();
+          }
+        }, 3000);
+      }
+
+      // Arrancar cuando el DOM esté listo
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+
+      // Pequeño refinamiento: al cargar la página, evitar que el scroll se salte por completo.
+      // El CSS snap-type ya lo maneja.
+    })();
+  </script>
 </body>
 </html>
